@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Home</title>
+</head>
+
+<body>
+
+<h1>Welcome {{ current_user.username }}</h1>
+
+{% if current_user.role == "admin" %}
+
+<h2>Admin Dashboard</h2>
+<p>This page is only visible to admins.</p>
+
+{% else %}
+
+<h2>User Dashboard</h2>
+<p>This page is visible to regular users.</p>
+
+{% endif %}
+
+<a href="/logout">Logout</a>
+
+</body>
+</html>
