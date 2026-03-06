@@ -30,6 +30,9 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
+@login_manager.user_loader
+def load_user(user_id):
+    return Users.query.get(int(user_id))
 
 # USER MODEL
 class Users(UserMixin, db.Model):
@@ -42,17 +45,71 @@ class Users(UserMixin, db.Model):
 
     role = db.Column(db.String(50), default="user", nullable=False)
 
+    # Stores the user's current account balance
+    balance = db.Column(db.Float, default=0)
+
+
+# TRANSACTIONS TABLE
+class Transactions(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    type = db.Column(db.String(50), nullable=False)  # deposit or withdraw
+
+    amount = db.Column(db.Float, nullable=False)
+
+    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
+
 
 # CREATE TABLES
 with app.app_context():
     db.create_all()
 
 
-# USER LOADER
-@login_manager.user_loader
-def load_user(user_id):
+# DEPOSIT ROUTE
+@app.route("/deposit", methods=["POST"])
+@login_required
+def deposit():
 
-    return Users.query.get(int(user_id))
+    amount = float(request.form.get("amount"))
+
+    # Add money to user balance
+    current_user.balance += amount
+
+    transaction = Transactions(
+        user_id=current_user.id,
+        type="deposit",
+        amount=amount
+    )
+
+    db.session.add(transaction)
+    db.session.commit()
+
+    return redirect(url_for("home"))
+
+# WITHDRAW ROUTE
+@app.route("/withdraw", methods=["POST"])
+@login_required
+def withdraw():
+
+    amount = float(request.form.get("amount"))
+
+    if current_user.balance >= amount:
+
+        current_user.balance -= amount
+
+        transaction = Transactions(
+            user_id=current_user.id,
+            type="withdraw",
+            amount=amount
+        )
+
+        db.session.add(transaction)
+        db.session.commit()
+
+    return redirect(url_for("home"))
 
 
 # HOME PAGE
