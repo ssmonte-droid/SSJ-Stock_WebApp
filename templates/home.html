@@ -33,8 +33,55 @@
 
 <br>
 
-
 {% endif %}
+
+<h2>Available Stocks</h2>
+
+{% for stock in stocks %}
+
+<p>
+    {{ stock.symbol }} - {{ stock.company_name }} - ${{ stock.price }}
+    | Shares Available: {{ stock.available_shares }}
+    | Shares You Own: {{ portfolio.get(stock.id, 0) }}
+
+    <button type="button" onclick="submitTrade('buy', {{ stock.id }})">Buy</button>
+    <button
+        type="button"
+        onclick="submitTrade('sell', {{ stock.id }})"
+        {% if portfolio.get(stock.id, 0) == 0 %}disabled{% endif %}>
+        Sell
+    </button>
+</p>
+
+<hr>
+
+{% endfor %}
+
+<form id="tradeForm" method="POST" style="display: none;">
+    <input type="hidden" name="shares" id="sharesInput">
+</form>
+
+<script>
+function submitTrade(action, stockId) {
+    let shares = prompt("Enter number of shares to " + action + ":");
+
+    if (shares === null || shares.trim() === "") {
+        return;
+    }
+
+    document.getElementById("sharesInput").value = shares;
+    document.getElementById("tradeForm").action = "/" + action + "/" + stockId;
+    document.getElementById("tradeForm").submit();
+}
+</script>
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <script>
+            alert("{{ messages[0] }}");
+        </script>
+    {% endif %}
+{% endwith %}
 
 <a href="/logout">Logout</a>
 

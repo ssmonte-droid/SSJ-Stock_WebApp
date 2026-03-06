@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
@@ -75,10 +75,110 @@ class Stocks(db.Model):
 
     available_shares = db.Column(db.Integer, nullable=False)
 
+# PORTFOLIO TABLE
+class Portfolio(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    stock_id = db.Column(db.Integer, db.ForeignKey("stocks.id"), nullable=False)
+
+    shares = db.Column(db.Integer, nullable=False)
+
 
 # CREATE TABLES
 with app.app_context():
     db.create_all()
+
+# BUY STOCK
+# Lets a user buy shares if they have enough money and stock is available
+@app.route("/buy/<int:stock_id>", methods=["POST"])
+@login_required
+def buy(stock_id):
+
+    stock = Stocks.query.get(stock_id)
+
+    shares = int(request.form.get("shares"))
+
+    total_price = stock.price * shares
+
+    if current_user.balance < total_price:
+        flash("Not enough money to complete this purchase.")
+        return redirect(url_for("home"))
+
+    if stock.available_shares < shares:
+        flash("Not enough stock available to complete this purchase.")
+        return redirect(url_for("home"))
+
+    current_user.balance -= total_price
+    stock.available_shares -= shares
+
+    portfolio = Portfolio.query.filter_by(
+        user_id=current_user.id,
+        stock_id=stock.id
+    ).first()
+
+    if portfolio:
+        portfolio.shares += shares
+    else:
+        portfolio = Portfolio(
+            user_id=current_user.id,
+            stock_id=stock.id,
+            shares=shares
+        )
+        db.session.add(portfolio)
+
+    transaction = Transactions(
+        user_id=current_user.id,
+        type="buy",
+        amount=total_price
+    )
+
+    db.session.add(transaction)
+    db.session.commit()
+
+    return redirect(url_for("home"))
+
+# SELL STOCK
+# Lets a user sell shares they already own
+@app.route("/sell/<int:stock_id>", methods=["POST"])
+@login_required
+def sell(stock_id):
+
+    stock = Stocks.query.get(stock_id)
+
+    shares = int(request.form.get("shares"))
+
+    portfolio = Portfolio.query.filter_by(
+        user_id=current_user.id,
+        stock_id=stock.id
+    ).first()
+
+    if not portfolio or portfolio.shares < shares:
+        flash("You do not own enough shares to complete this sale.")
+        return redirect(url_for("home"))
+
+    total_price = stock.price * shares
+
+    current_user.balance += total_price
+    stock.available_shares += shares
+
+    portfolio.shares -= shares
+
+    if portfolio.shares == 0:
+        db.session.delete(portfolio)
+
+    transaction = Transactions(
+        user_id=current_user.id,
+        type="sell",
+        amount=total_price
+    )
+
+    db.session.add(transaction)
+    db.session.commit()
+
+    return redirect(url_for("home"))
 
 # CREATE STOCK (ADMIN ONLY)
 @app.route("/create_stock", methods=["GET", "POST"])
@@ -160,7 +260,20 @@ def withdraw():
 @login_required
 def home():
 
-    return render_template("home.html")
+    stocks = Stocks.query.all()
+
+    user_portfolio = Portfolio.query.filter_by(user_id=current_user.id).all()
+
+    portfolio_dict = {}
+
+    for item in user_portfolio:
+        portfolio_dict[item.stock_id] = item.shares
+
+    return render_template(
+        "home.html",
+        stocks=stocks,
+        portfolio=portfolio_dict
+    )
 
 
 # REGISTER USER
