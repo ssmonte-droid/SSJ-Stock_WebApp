@@ -62,10 +62,53 @@ class Transactions(db.Model):
 
     timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
 
+# STOCK TABLE
+class Stocks(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    symbol = db.Column(db.String(10), unique=True, nullable=False)
+
+    company_name = db.Column(db.String(200), nullable=False)
+
+    price = db.Column(db.Float, nullable=False)
+
+    available_shares = db.Column(db.Integer, nullable=False)
+
 
 # CREATE TABLES
 with app.app_context():
     db.create_all()
+
+# CREATE STOCK (ADMIN ONLY)
+@app.route("/create_stock", methods=["GET", "POST"])
+@login_required
+def create_stock():
+
+    # Only admins can create stocks
+    if current_user.role != "admin":
+        return redirect(url_for("home"))
+
+    if request.method == "POST":
+
+        symbol = request.form.get("symbol")
+        company_name = request.form.get("company_name")
+        price = float(request.form.get("price"))
+        available_shares = int(request.form.get("available_shares"))
+
+        new_stock = Stocks(
+            symbol=symbol,
+            company_name=company_name,
+            price=price,
+            available_shares=available_shares
+        )
+
+        db.session.add(new_stock)
+        db.session.commit()
+
+        return redirect(url_for("home"))
+
+    return render_template("create_stock.html")
 
 
 # DEPOSIT ROUTE

@@ -11,17 +11,12 @@
 {% if current_user.role == "admin" %}
 
 <h2>Admin Dashboard</h2>
-<p>This page is only visible to admins.</p>
+
+<a href="/create_stock">Create Stock</a>
 
 {% else %}
 
 <h2>User Dashboard</h2>
-<p>This page is visible to regular users.</p>
-
-{% endif %}
-
-<!-- TEMP TESTING FORMS FOR DEPOSIT AND WITHDRAW -->
-
 <h2>Current Balance: ${{ current_user.balance }}</h2>
 
 <h3>Deposit</h3>
@@ -37,6 +32,9 @@
 </form>
 
 <br>
+
+
+{% endif %}
 
 <a href="/logout">Logout</a>
 
