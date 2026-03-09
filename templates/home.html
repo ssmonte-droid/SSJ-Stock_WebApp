@@ -17,21 +17,32 @@
 {% else %}
 
 <h2>User Dashboard</h2>
-<h2>Current Balance: ${{ current_user.balance }}</h2>
+
+<p>Current Balance: ${{ "%.2f"|format(current_user.balance) }}</p>
+
+<p>Stock Value: ${{ "%.2f"|format(portfolio_value) }}</p>
+
+<p>Total Net Worth: ${{ "%.2f"|format(current_user.balance + portfolio_value) }}</p>
 
 <h3>Deposit</h3>
+
 <form action="/deposit" method="POST">
-<input type="number" name="amount" placeholder="Amount" required>
+<input type="number" name="amount" step="0.01" min="1" placeholder="Amount" required>
 <button type="submit">Deposit</button>
 </form>
 
 <h3>Withdraw</h3>
+
 <form action="/withdraw" method="POST">
-<input type="number" name="amount" placeholder="Amount" required>
+<input type="number" name="amount" step="0.01" min="1" placeholder="Amount" required>
 <button type="submit">Withdraw</button>
 </form>
 
 <br>
+
+<a href="/transactions">View Transaction History</a>
+
+<br><br>
 
 {% endif %}
 
@@ -40,48 +51,76 @@
 {% for stock in stocks %}
 
 <p>
-    {{ stock.symbol }} - {{ stock.company_name }} - ${{ stock.price }}
-    | Shares Available: {{ stock.available_shares }}
-    | Shares You Own: {{ portfolio.get(stock.id, 0) }}
 
-    <button type="button" onclick="submitTrade('buy', {{ stock.id }})">Buy</button>
-    <button
-        type="button"
-        onclick="submitTrade('sell', {{ stock.id }})"
-        {% if portfolio.get(stock.id, 0) == 0 %}disabled{% endif %}>
-        Sell
-    </button>
+{{ stock.symbol }} - {{ stock.company_name }} - ${{ "%.2f"|format(stock.price) }}
+
+| Shares Available: {{ stock.available_shares }}
+
+| Shares You Own: {{ portfolio.get(stock.id, 0) }}
+
+<button type="button" onclick="submitTrade('buy', {{ stock.id }})">
+Buy
+</button>
+
+<button
+type="button"
+onclick="submitTrade('sell', {{ stock.id }})"
+{% if portfolio.get(stock.id, 0) == 0 %}disabled{% endif %}
+>
+Sell
+</button>
+
 </p>
 
 <hr>
 
 {% endfor %}
 
-<form id="tradeForm" method="POST" style="display: none;">
-    <input type="hidden" name="shares" id="sharesInput">
+<form id="tradeForm" method="POST" style="display:none;">
+
+<input type="hidden" name="shares" id="sharesInput">
+
 </form>
 
 <script>
+
 function submitTrade(action, stockId) {
+
     let shares = prompt("Enter number of shares to " + action + ":");
 
     if (shares === null || shares.trim() === "") {
         return;
     }
 
+    shares = parseInt(shares);
+
+    if (isNaN(shares) || shares <= 0) {
+        alert("Invalid number of shares.");
+        return;
+    }
+
     document.getElementById("sharesInput").value = shares;
+
     document.getElementById("tradeForm").action = "/" + action + "/" + stockId;
+
     document.getElementById("tradeForm").submit();
 }
+
 </script>
 
 {% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <script>
-            alert("{{ messages[0] }}");
-        </script>
-    {% endif %}
+
+{% if messages %}
+
+<script>
+alert("{{ messages[0] }}");
+</script>
+
+{% endif %}
+
 {% endwith %}
+
+<br>
 
 <a href="/logout">Logout</a>
 

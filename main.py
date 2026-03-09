@@ -10,8 +10,8 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# SECRET KEY
-app.config["SECRET_KEY"] = "super-secret-key"
+# SECRET KEY stored in .env file for security
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
 # MYSQL DATABASE CONNECTION
 DB_USER = os.getenv("DB_USER")
@@ -37,6 +37,8 @@ def load_user(user_id):
 # USER MODEL
 class Users(UserMixin, db.Model):
 
+    __tablename__ = "users"
+    
     id = db.Column(db.Integer, primary_key=True)
 
     username = db.Column(db.String(250), unique=True, nullable=False)
@@ -99,7 +101,7 @@ def buy(stock_id):
 
     stock = Stocks.query.get(stock_id)
 
-    shares = int(request.form.get("shares"))
+    shares = int(request.form.get("shares", 0))
 
     total_price = stock.price * shares
 
@@ -148,7 +150,7 @@ def sell(stock_id):
 
     stock = Stocks.query.get(stock_id)
 
-    shares = int(request.form.get("shares"))
+    shares = int(request.form.get("shares", 0))
 
     portfolio = Portfolio.query.filter_by(
         user_id=current_user.id,
@@ -216,7 +218,11 @@ def create_stock():
 @login_required
 def deposit():
 
-    amount = float(request.form.get("amount"))
+    amount = float(request.form.get("amount", 0))
+
+    if amount <= 0:
+        flash("Invalid amount.")
+        return redirect(url_for("home"))
 
     # Add money to user balance
     current_user.balance += amount
@@ -237,7 +243,11 @@ def deposit():
 @login_required
 def withdraw():
 
-    amount = float(request.form.get("amount"))
+    amount = float(request.form.get("amount", 0))
+
+    if amount <= 0:
+        flash("Invalid amount.")
+        return redirect(url_for("home"))
 
     if current_user.balance >= amount:
 
@@ -265,16 +275,34 @@ def home():
     user_portfolio = Portfolio.query.filter_by(user_id=current_user.id).all()
 
     portfolio_dict = {}
+    portfolio_value = 0
 
     for item in user_portfolio:
+
         portfolio_dict[item.stock_id] = item.shares
 
-    return render_template(
-        "home.html",
-        stocks=stocks,
-        portfolio=portfolio_dict
-    )
+        stock = Stocks.query.get(item.stock_id)
 
+        portfolio_value += item.shares * stock.price
+    return render_template(
+    "home.html",
+    stocks=stocks,
+    portfolio=portfolio_dict,
+    portfolio_value=portfolio_value
+)
+#transactions page to show user transaction history
+@app.route("/transactions")
+@login_required
+def transactions():
+
+    history = Transactions.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Transactions.timestamp.desc()).all()
+
+    return render_template(
+        "transactions.html",
+        history=history
+    )
 
 # REGISTER USER
 @app.route("/register", methods=["GET", "POST"])
