@@ -1,128 +1,165 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Home</title>
+    <title>Home</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
-<body>
+<body class="bg-light">
 
-<h1>Welcome {{ current_user.username }}</h1>
+<div class="container py-4">
 
-{% if current_user.role == "admin" %}
+    <nav class="navbar navbar-dark bg-dark mb-4 rounded">
+        <div class="container-fluid">
+            <span class="navbar-brand">Stock Trading App</span>
+            <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+        </div>
+    </nav>
 
-<h2>Admin Dashboard</h2>
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h4>Welcome {{ current_user.username }}</h4>
 
-<a href="/create_stock">Create Stock</a>
+            {% if current_user.role == "admin" %}
+                <a href="/create_stock" class="btn btn-primary mt-2">Create Stock</a>
+            {% else %}
+                <div class="row text-center mt-3">
+                    <div class="col-md-4">
+                        <h6>Balance</h6>
+                        <p class="fw-bold text-success">
+                            ${{ "%.2f"|format(current_user.balance) }}
+                        </p>
+                    </div>
 
-{% else %}
+                    <div class="col-md-4">
+                        <h6>Stock Value</h6>
+                        <p class="fw-bold">
+                            ${{ "%.2f"|format(portfolio_value) }}
+                        </p>
+                    </div>
 
-<h2>User Dashboard</h2>
+                    <div class="col-md-4">
+                        <h6>Total Net Worth</h6>
+                        <p class="fw-bold text-primary">
+                            ${{ "%.2f"|format(current_user.balance + portfolio_value) }}
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 
-<p>Current Balance: ${{ "%.2f"|format(current_user.balance) }}</p>
+    {% if current_user.role != "admin" %}
 
-<p>Stock Value: ${{ "%.2f"|format(portfolio_value) }}</p>
+    <div class="row mb-4">
 
-<p>Total Net Worth: ${{ "%.2f"|format(current_user.balance + portfolio_value) }}</p>
+        <div class="col-md-6">
+            <div class="card p-3 shadow-sm">
+                <h5>Deposit</h5>
+                <form action="/deposit" method="POST">
+                    <div class="input-group">
+                        <input type="number" name="amount" class="form-control" placeholder="Amount" required>
+                        <button class="btn btn-success">Deposit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-<h3>Deposit</h3>
+        <div class="col-md-6">
+            <div class="card p-3 shadow-sm">
+                <h5>Withdraw</h5>
+                <form action="/withdraw" method="POST">
+                    <div class="input-group">
+                        <input type="number" name="amount" class="form-control" placeholder="Amount" required>
+                        <button class="btn btn-danger">Withdraw</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-<form action="/deposit" method="POST">
-<input type="number" name="amount" step="0.01" min="1" placeholder="Amount" required>
-<button type="submit">Deposit</button>
-</form>
+    </div>
 
-<h3>Withdraw</h3>
+    <a href="/transactions" class="btn btn-outline-primary mb-3">
+        View Transaction History
+    </a>
 
-<form action="/withdraw" method="POST">
-<input type="number" name="amount" step="0.01" min="1" placeholder="Amount" required>
-<button type="submit">Withdraw</button>
-</form>
+    {% endif %}
 
-<br>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="alert alert-warning alert-dismissible fade show">
+        {{ messages[0] }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+    {% endwith %}
 
-<a href="/transactions">View Transaction History</a>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-3">Available Stocks</h5>
 
-<br><br>
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Company</th>
+                        <th>Price</th>
+                        <th>Available</th>
+                        <th>Owned</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
 
-{% endif %}
+                <tbody>
+                {% for stock in stocks %}
+                    <tr>
+                        <td>{{ stock.symbol }}</td>
+                        <td>{{ stock.company_name }}</td>
+                        <td>${{ "%.2f"|format(stock.price) }}</td>
+                        <td>{{ stock.available_shares }}</td>
+                        <td>{{ portfolio.get(stock.id, 0) }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-success"
+                                onclick="submitTrade('buy', {{ stock.id }})">
+                                Buy
+                            </button>
 
-<h2>Available Stocks</h2>
+                            <button class="btn btn-sm btn-danger"
+                                onclick="submitTrade('sell', {{ stock.id }})"
+                                {% if portfolio.get(stock.id, 0) == 0 %}disabled{% endif %}>
+                                Sell
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
 
-{% for stock in stocks %}
+            </table>
+        </div>
+    </div>
 
-<p>
-
-{{ stock.symbol }} - {{ stock.company_name }} - ${{ "%.2f"|format(stock.price) }}
-
-| Shares Available: {{ stock.available_shares }}
-
-| Shares You Own: {{ portfolio.get(stock.id, 0) }}
-
-<button type="button" onclick="submitTrade('buy', {{ stock.id }})">
-Buy
-</button>
-
-<button
-type="button"
-onclick="submitTrade('sell', {{ stock.id }})"
-{% if portfolio.get(stock.id, 0) == 0 %}disabled{% endif %}
->
-Sell
-</button>
-
-</p>
-
-<hr>
-
-{% endfor %}
+</div>
 
 <form id="tradeForm" method="POST" style="display:none;">
-
-<input type="hidden" name="shares" id="sharesInput">
-
+    <input type="hidden" name="shares" id="sharesInput">
 </form>
 
 <script>
-
 function submitTrade(action, stockId) {
-
     let shares = prompt("Enter number of shares to " + action + ":");
 
-    if (shares === null || shares.trim() === "") {
-        return;
-    }
-
-    shares = parseInt(shares);
-
-    if (isNaN(shares) || shares <= 0) {
+    if (!shares || shares <= 0) {
         alert("Invalid number of shares.");
         return;
     }
 
     document.getElementById("sharesInput").value = shares;
-
     document.getElementById("tradeForm").action = "/" + action + "/" + stockId;
-
     document.getElementById("tradeForm").submit();
 }
-
 </script>
 
-{% with messages = get_flashed_messages() %}
-
-{% if messages %}
-
-<script>
-alert("{{ messages[0] }}");
-</script>
-
-{% endif %}
-
-{% endwith %}
-
-<br>
-
-<a href="/logout">Logout</a>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>

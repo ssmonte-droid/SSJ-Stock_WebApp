@@ -1,36 +1,77 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Transaction History</title>
+    <title>Transaction History</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
-<body>
+<body class="bg-light">
 
-<h1>Transaction History</h1>
+<div class="container py-4">
 
-<table border="1">
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-dark bg-dark mb-4 rounded">
+        <div class="container-fluid">
+            <span class="navbar-brand">Transaction History</span>
+            <a href="/" class="btn btn-outline-light btn-sm">Home</a>
+        </div>
+    </nav>
 
-<tr>
-<th>Type</th>
-<th>Amount</th>
-<th>Time</th>
-</tr>
+    <!-- CARD -->
+    <div class="card shadow-sm">
+        <div class="card-body">
 
-{% for t in history %}
+            <h4 class="mb-3">Your Transactions</h4>
 
-<tr>
-<td>{{ t.type }}</td>
-<td>${{ "%.2f"|format(t.amount) }}</td>
-<td>{{ t.timestamp }}</td>
-</tr>
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Date & Time</th>
+                    </tr>
+                </thead>
 
-{% endfor %}
+                <tbody>
+                {% for t in history %}
+                    <tr>
+                        <td>
+                            {% if t.type == "deposit" %}
+                                <span class="badge bg-success">Deposit</span>
+                            {% elif t.type == "withdraw" %}
+                                <span class="badge bg-danger">Withdraw</span>
+                            {% elif t.type == "buy" %}
+                                <span class="badge bg-primary">Buy</span>
+                            {% elif t.type == "sell" %}
+                                <span class="badge bg-warning text-dark">Sell</span>
+                            {% else %}
+                                {{ t.type }}
+                            {% endif %}
+                        </td>
 
-</table>
+                        <td class="fw-bold">
+                            ${{ "%.2f"|format(t.amount) }}
+                        </td>
 
-<br>
+                        <td>
+                            {{ t.timestamp }}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
 
-<a href="/">Back to Home</a>
+            </table>
+
+            {% if history|length == 0 %}
+                <p class="text-muted text-center mt-3">No transactions yet.</p>
+            {% endif %}
+
+        </div>
+    </div>
+
+</div>
 
 </body>
 </html>
