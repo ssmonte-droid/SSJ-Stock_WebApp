@@ -327,8 +327,15 @@ function submitTrade(action, stockId) {
 
 function updateDeviceTime() {
 
+    let now = new Date();
+
     document.getElementById("deviceTime").textContent =
-        new Date().toLocaleString();
+        now.toLocaleString([], {
+            weekday: "long",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true
+        });
 
 }
 
