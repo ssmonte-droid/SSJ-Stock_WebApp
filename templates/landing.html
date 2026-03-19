@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome{% endblock %}
+
+{% block body_class %}bg-light{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5 text-center">
+                    <h1 class="display-5 fw-bold mb-3">Welcome to the Stock Trading App</h1>
+                    <p class="lead text-muted mb-4">
+                        Practice buying and selling stocks, manage your account balance,
+                        review transaction history, and simulate trading with market-hour rules.
+                    </p>
+
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">Sign In</a>
+                        <a href="{{ url_for('register') }}" class="btn btn-success btn-lg">Create Account</a>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <p class="text-muted mb-0">
+                        Trading is only executed during market hours. Orders placed after hours are queued automatically.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

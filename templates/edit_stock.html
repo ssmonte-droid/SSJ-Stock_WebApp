@@ -1,37 +1,37 @@
 {% extends "base.html" %}
 
-{% block title %}Create Stock{% endblock %}
+{% block title %}Edit Stock{% endblock %}
 {% block body_class %}bg-light{% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <div class="card shadow-sm">
         <div class="card-body">
-            <h2>Create Stock</h2>
+            <h2>Edit Stock</h2>
 
             <form method="POST">
                 <div class="mb-3">
                     <label class="form-label">Symbol</label>
-                    <input type="text" name="symbol" class="form-control" required>
+                    <input type="text" name="symbol" class="form-control" value="{{ stock.symbol }}" required>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Company Name</label>
-                    <input type="text" name="company_name" class="form-control" required>
+                    <input type="text" name="company_name" class="form-control" value="{{ stock.company_name }}" required>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Price</label>
-                    <input type="number" step="0.01" name="price" class="form-control" required>
+                    <input type="number" step="0.01" name="price" class="form-control" value="{{ stock.price }}" required>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Available Shares</label>
-                    <input type="number" name="available_shares" class="form-control" required>
+                    <input type="number" name="available_shares" class="form-control" value="{{ stock.available_shares }}" required>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Create Stock</button>
-                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back</a>
+                <button type="submit" class="btn btn-warning">Save Changes</button>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
             </form>
         </div>
     </div>
