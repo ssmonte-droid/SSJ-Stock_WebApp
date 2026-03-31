@@ -14,6 +14,7 @@
 
             {% if current_user.role == "admin" %}
                 <a href="{{ url_for('create_stock') }}" class="btn btn-primary mt-2">Create Stock</a>
+                <a href="{{ url_for('market_settings') }}" class="btn btn-secondary mt-2">Market Settings</a>
             {% endif %}
 
             <div class="row text-center mt-4">

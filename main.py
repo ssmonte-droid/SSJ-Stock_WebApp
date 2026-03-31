@@ -81,31 +81,75 @@ class PendingOrder(db.Model):
     executed_at = db.Column(db.DateTime, nullable=True)
     failure_reason = db.Column(db.String(255), nullable=True)
 
+class MarketSettings(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    open_time = db.Column(db.Time, nullable=False, default=time(9, 30))
+    close_time = db.Column(db.Time, nullable=False, default=time(16, 0))
+    timezone = db.Column(db.String(100), nullable=False, default="America/New_York")
+
+    monday = db.Column(db.Boolean, default=True, nullable=False)
+    tuesday = db.Column(db.Boolean, default=True, nullable=False)
+    wednesday = db.Column(db.Boolean, default=True, nullable=False)
+    thursday = db.Column(db.Boolean, default=True, nullable=False)
+    friday = db.Column(db.Boolean, default=True, nullable=False)
+    saturday = db.Column(db.Boolean, default=False, nullable=False)
+    sunday = db.Column(db.Boolean, default=False, nullable=False)
+
 
 with app.app_context():
     db.create_all()
 
+    settings = MarketSettings.query.first()
+    if not settings:
+        settings = MarketSettings(
+            open_time=time(9, 30),
+            close_time=time(16, 0),
+            timezone="America/New_York",
+            monday=True,
+            tuesday=True,
+            wednesday=True,
+            thursday=True,
+            friday=True,
+            saturday=False,
+            sunday=False
+        )
+        db.session.add(settings)
+        db.session.commit()
+
 # HELPERS
+def get_market_settings():
+    return MarketSettings.query.first()
+
+
 def get_market_now():
-    return datetime.now(ZoneInfo("America/New_York"))
+    settings = get_market_settings()
+    return datetime.now(ZoneInfo(settings.timezone))
 
 
 def is_market_open():
-    now_et = get_market_now()
+    settings = get_market_settings()
+    now_local = get_market_now()
 
-    # Monday=0 ... Sunday=6
-    if now_et.weekday() >= 5:
+    allowed_days = {
+        0: settings.monday,
+        1: settings.tuesday,
+        2: settings.wednesday,
+        3: settings.thursday,
+        4: settings.friday,
+        5: settings.saturday,
+        6: settings.sunday
+    }
+
+    if not allowed_days[now_local.weekday()]:
         return False
 
-    market_open = time(9, 30)
-    market_close = time(16, 0)
-
-    return market_open <= now_et.time() <= market_close
+    return settings.open_time <= now_local.time() <= settings.close_time
 
 
 def market_status_text():
-    now_et = get_market_now()
-    return now_et.strftime("%A, %I:%M %p ET")
+    settings = get_market_settings()
+    now_local = get_market_now()
+    return now_local.strftime("%A, %I:%M %p") + f" ({settings.timezone})"
 
 
 def queue_order(user_id, stock_id, order_type, shares):
@@ -582,6 +626,44 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for("landing"))
+
+@app.route("/market_settings", methods=["GET", "POST"])
+@login_required
+def market_settings():
+    if current_user.role != "admin":
+        return redirect(url_for("dashboard"))
+
+    settings = MarketSettings.query.first()
+
+    if request.method == "POST":
+        open_time_str = request.form.get("open_time")
+        close_time_str = request.form.get("close_time")
+        timezone_str = request.form.get("timezone")
+
+        new_open = datetime.strptime(open_time_str, "%H:%M").time()
+        new_close = datetime.strptime(close_time_str, "%H:%M").time()
+
+        if new_open >= new_close:
+            flash("Open time must be earlier than close time.")
+            return redirect(url_for("market_settings"))
+
+        settings.open_time = new_open
+        settings.close_time = new_close
+        settings.timezone = timezone_str
+
+        settings.monday = "monday" in request.form
+        settings.tuesday = "tuesday" in request.form
+        settings.wednesday = "wednesday" in request.form
+        settings.thursday = "thursday" in request.form
+        settings.friday = "friday" in request.form
+        settings.saturday = "saturday" in request.form
+        settings.sunday = "sunday" in request.form
+
+        db.session.commit()
+        flash("Market settings updated successfully.")
+        return redirect(url_for("market_settings"))
+
+    return render_template("market_settings.html", settings=settings)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Market Settings{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2 class="mb-4">Market Settings</h2>
+
+            <form method="POST">
+                <div class="mb-3">
+                    <label class="form-label">Open Time</label>
+                    <input type="time" name="open_time" class="form-control"
+                           value="{{ settings.open_time.strftime('%H:%M') }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Close Time</label>
+                    <input type="time" name="close_time" class="form-control"
+                           value="{{ settings.close_time.strftime('%H:%M') }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Timezone</label>
+                    <input type="text" name="timezone" class="form-control"
+                           value="{{ settings.timezone }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label d-block">Trading Days</label>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="monday" id="monday"
+                               {% if settings.monday %}checked{% endif %}>
+                        <label class="form-check-label" for="monday">Monday</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="tuesday" id="tuesday"
+                               {% if settings.tuesday %}checked{% endif %}>
+                        <label class="form-check-label" for="tuesday">Tuesday</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="wednesday" id="wednesday"
+                               {% if settings.wednesday %}checked{% endif %}>
+                        <label class="form-check-label" for="wednesday">Wednesday</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="thursday" id="thursday"
+                               {% if settings.thursday %}checked{% endif %}>
+                        <label class="form-check-label" for="thursday">Thursday</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="friday" id="friday"
+                               {% if settings.friday %}checked{% endif %}>
+                        <label class="form-check-label" for="friday">Friday</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="saturday" id="saturday"
+                               {% if settings.saturday %}checked{% endif %}>
+                        <label class="form-check-label" for="saturday">Saturday</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="sunday" id="sunday"
+                               {% if settings.sunday %}checked{% endif %}>
+                        <label class="form-check-label" for="sunday">Sunday</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Settings</button>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
