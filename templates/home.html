@@ -138,7 +138,8 @@
 
             <h5>Deposit</h5>
 
-            <form action="{{ url_for('deposit') }}" method="POST">
+            <form action="{{ url_for('deposit') }}" method="POST"
+                onsubmit="return confirmDeposit();">
 
                 <div class="input-group">
 
@@ -170,7 +171,9 @@
 
             <h5>Withdraw</h5>
 
-            <form action="{{ url_for('withdraw') }}" method="POST">
+            <form action="{{ url_for('withdraw') }}" method="POST"
+                onsubmit="return confirmWithdraw();">
+                
 
                 <div class="input-group">
 
@@ -235,14 +238,14 @@
                         <td>
 
                             <button class="btn btn-success btn-sm"
-                                onclick="submitTrade('buy', {{ stock.id }})">
+                                onclick="submitTrade('buy', {{ stock.id }}, '{{ stock.symbol }}')">
 
                                 Buy
 
                             </button>
 
                             <button class="btn btn-danger btn-sm"
-                                onclick="submitTrade('sell', {{ stock.id }})"
+                                onclick="submitTrade('sell', {{ stock.id }}, '{{ stock.symbol }}')"
                                 {% if portfolio.get(stock.id, 0) == 0 %}disabled{% endif %}>
 
                                 Sell
@@ -298,11 +301,18 @@
 
 <script>
 
-function submitTrade(action, stockId) {
+function submitTrade(action, stockId, stockSymbol) {
 
     let shares = prompt("Enter shares:");
 
     if (!shares || shares <= 0) return;
+
+    let actionText = action === "buy" ? "buy" : "sell";
+    let confirmed = confirm(
+        "Are you sure you want to " + actionText + " " + shares + " shares of " + stockSymbol + "?"
+    );
+
+    if (!confirmed) return;
 
     document.getElementById("sharesInput").value = shares;
 
@@ -353,6 +363,16 @@ function formatNumberInput(input) {
 
 formatNumberInput(document.getElementById("depositInput"));
 formatNumberInput(document.getElementById("withdrawInput"));
+
+function confirmDeposit() {
+    let amount = document.getElementById("depositInput").value;
+    return confirm("Are you sure you want to deposit $" + amount + "?");
+}
+
+function confirmWithdraw() {
+    let amount = document.getElementById("withdrawInput").value;
+    return confirm("Are you sure you want to withdraw $" + amount + "?");
+}
 
 </script>
 
