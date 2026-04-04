@@ -4,8 +4,9 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_bcrypt import Bcrypt
 from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
-from datetime import datetime, time
+from datetime import datetime, time, timedelta, UTC
 import os
+import random
 
 load_dotenv()
 
@@ -116,6 +117,8 @@ with app.app_context():
         db.session.add(settings)
         db.session.commit()
 
+last_price_update = None
+
 # HELPERS
 def get_market_settings():
     return MarketSettings.query.first()
@@ -177,7 +180,7 @@ def process_pending_orders():
         if not user or not stock:
             order.status = "failed"
             order.failure_reason = "User or stock not found."
-            order.executed_at = datetime.utcnow()
+            order.executed_at = datetime.now(UTC)
             continue
 
         if order.order_type == "buy":
@@ -186,13 +189,13 @@ def process_pending_orders():
             if user.balance < total_price:
                 order.status = "failed"
                 order.failure_reason = "Insufficient funds at execution time."
-                order.executed_at = datetime.utcnow()
+                order.executed_at = datetime.now(UTC)
                 continue
 
             if stock.available_shares < order.shares:
                 order.status = "failed"
                 order.failure_reason = "Insufficient stock available at execution time."
-                order.executed_at = datetime.utcnow()
+                order.executed_at = datetime.now(UTC)
                 continue
 
             user.balance -= total_price
@@ -221,7 +224,7 @@ def process_pending_orders():
             db.session.add(transaction)
 
             order.status = "executed"
-            order.executed_at = datetime.utcnow()
+            order.executed_at = datetime.now(UTC)
 
         elif order.order_type == "sell":
             portfolio = Portfolio.query.filter_by(
@@ -232,7 +235,7 @@ def process_pending_orders():
             if not portfolio or portfolio.shares < order.shares:
                 order.status = "failed"
                 order.failure_reason = "Not enough shares at execution time."
-                order.executed_at = datetime.utcnow()
+                order.executed_at = datetime.now(UTC)
                 continue
 
             total_price = stock.price * order.shares
@@ -252,10 +255,33 @@ def process_pending_orders():
             db.session.add(transaction)
 
             order.status = "executed"
-            order.executed_at = datetime.utcnow()
+            order.executed_at = datetime.now(UTC)
 
     db.session.commit()
 
+def update_stock_prices():
+    global last_price_update
+
+    now = datetime.now(UTC)
+
+    if last_price_update and (now - last_price_update) < timedelta(seconds=30):
+        return
+
+    stocks = Stocks.query.all()
+
+    for stock in stocks:
+        change_percent = random.uniform(-0.03, 0.03)
+        new_price = stock.price * (1 + change_percent)
+
+        if new_price < 1:
+            new_price = 1
+
+        stock.price = round(new_price, 2)
+
+    db.session.commit()
+    last_price_update = now
+
+    
 
 # PUBLIC LANDING PAGE
 @app.route("/")
@@ -269,6 +295,7 @@ def landing():
 @app.route("/dashboard")
 @login_required
 def dashboard():
+    update_stock_prices()
     process_pending_orders()
 
     stocks = Stocks.query.all()
