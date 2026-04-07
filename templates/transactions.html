@@ -20,7 +20,7 @@
                 <tbody>
                 {% for t in history %}
                     <tr>
-                        <td>{{ t.type }}</td>
+                        <td>{{ transaction_labels.get(t.type, t.type) }}</td>
                         <td>${{ "%.2f"|format(t.amount) }}</td>
                         <td>{{ t.timestamp }}</td>
                     </tr>

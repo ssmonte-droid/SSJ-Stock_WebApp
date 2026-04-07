@@ -73,9 +73,45 @@
                     </div>
                 </div>
 
+                <hr>
+
+                <div class="mb-3">
+                    <label class="form-label">Add Market Holiday</label>
+                    <input type="date" name="holiday_date" class="form-control">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Reason</label>
+                    <input type="text" name="holiday_reason" class="form-control" placeholder="Optional reason">
+                </div>
+
                 <button type="submit" class="btn btn-primary">Save Settings</button>
                 <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back</a>
             </form>
+
+            {% if holidays %}
+            <div class="mt-4">
+                <h5>Scheduled Market Holidays</h5>
+                <ul class="list-group">
+                    {% for holiday in holidays %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>
+                            {{ holiday.holiday_date }}
+                            {% if holiday.reason %}
+                                - {{ holiday.reason }}
+                            {% endif %}
+                        </span>
+                        <a href="{{ url_for('delete_holiday', holiday_id=holiday.id) }}"
+                           class="btn btn-sm btn-danger"
+                           onclick="return confirm('Delete this holiday?')">
+                            Delete
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
         </div>
     </div>
 </div>

@@ -96,6 +96,11 @@ class MarketSettings(db.Model):
     saturday = db.Column(db.Boolean, default=False, nullable=False)
     sunday = db.Column(db.Boolean, default=False, nullable=False)
 
+class MarketHoliday(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    holiday_date = db.Column(db.Date, unique=True, nullable=False)
+    reason = db.Column(db.String(100), nullable=True)
+
 
 with app.app_context():
     db.create_all()
@@ -132,6 +137,10 @@ def get_market_now():
 def is_market_open():
     settings = get_market_settings()
     now_local = get_market_now()
+
+    holiday = MarketHoliday.query.filter_by(holiday_date=now_local.date()).first()
+    if holiday:
+        return False
 
     allowed_days = {
         0: settings.monday,
@@ -299,6 +308,7 @@ def dashboard():
     process_pending_orders()
 
     stocks = Stocks.query.all()
+    stock_lookup = {stock.id: stock.symbol for stock in stocks}
     user_portfolio = Portfolio.query.filter_by(user_id=current_user.id).all()
     pending_orders = PendingOrder.query.filter_by(user_id=current_user.id, status="queued").order_by(PendingOrder.created_at.desc()).all()
 
@@ -314,6 +324,7 @@ def dashboard():
     return render_template(
         "home.html",
         stocks=stocks,
+        stock_lookup=stock_lookup,
         portfolio=portfolio_dict,
         portfolio_value=portfolio_value,
         market_open=is_market_open(),
@@ -442,6 +453,13 @@ def delete_order(order_id):
         flash("Cannot delete executed order.")
         return redirect(url_for("dashboard"))
 
+    transaction = Transactions(
+        user_id=current_user.id,
+        type=f"cancel_{order.order_type}",
+        amount=0
+    )
+
+    db.session.add(transaction)
     db.session.delete(order)
     db.session.commit()
 
@@ -487,10 +505,24 @@ def delete_stock(id):
 
     stock = Stocks.query.get(id)
 
-    if stock:
-        db.session.delete(stock)
-        db.session.commit()
-        flash("Stock deleted successfully.")
+    if not stock:
+        flash("Stock not found.")
+        return redirect(url_for("dashboard"))
+
+    queued_order_exists = PendingOrder.query.filter_by(stock_id=stock.id, status="queued").first()
+    portfolio_exists = Portfolio.query.filter_by(stock_id=stock.id).first()
+
+    if queued_order_exists:
+        flash("Cannot delete stock because it has queued orders.")
+        return redirect(url_for("dashboard"))
+
+    if portfolio_exists:
+        flash("Cannot delete stock because it is still in user portfolios.")
+        return redirect(url_for("dashboard"))
+
+    db.session.delete(stock)
+    db.session.commit()
+    flash("Stock deleted successfully.")
 
     return redirect(url_for("dashboard"))
 
@@ -583,7 +615,20 @@ def transactions():
         user_id=current_user.id
     ).order_by(Transactions.timestamp.desc()).all()
 
-    return render_template("transactions.html", history=history)
+    transaction_labels = {
+        "buy": "Buy Order Executed",
+        "sell": "Sell Order Executed",
+        "deposit": "Deposit",
+        "withdraw": "Withdrawal",
+        "cancel_buy": "Cancelled Buy Order",
+        "cancel_sell": "Cancelled Sell Order"
+    }
+
+    return render_template(
+        "transactions.html",
+        history=history,
+        transaction_labels=transaction_labels
+    )
 
 
 # SIGN UP
@@ -661,11 +706,15 @@ def market_settings():
         return redirect(url_for("dashboard"))
 
     settings = MarketSettings.query.first()
+    holidays = MarketHoliday.query.order_by(MarketHoliday.holiday_date.asc()).all()
 
     if request.method == "POST":
         open_time_str = request.form.get("open_time")
         close_time_str = request.form.get("close_time")
         timezone_str = request.form.get("timezone")
+
+        holiday_date_str = request.form.get("holiday_date")
+        holiday_reason = request.form.get("holiday_reason")
 
         new_open = datetime.strptime(open_time_str, "%H:%M").time()
         new_close = datetime.strptime(close_time_str, "%H:%M").time()
@@ -686,11 +735,37 @@ def market_settings():
         settings.saturday = "saturday" in request.form
         settings.sunday = "sunday" in request.form
 
+        if holiday_date_str:
+            holiday_date = datetime.strptime(holiday_date_str, "%Y-%m-%d").date()
+
+            existing_holiday = MarketHoliday.query.filter_by(holiday_date=holiday_date).first()
+            if not existing_holiday:
+                new_holiday = MarketHoliday(
+                    holiday_date=holiday_date,
+                    reason=holiday_reason
+                )
+                db.session.add(new_holiday)
+
         db.session.commit()
         flash("Market settings updated successfully.")
         return redirect(url_for("market_settings"))
 
-    return render_template("market_settings.html", settings=settings)
+    return render_template("market_settings.html", settings=settings, holidays=holidays)
+
+@app.route("/delete_holiday/<int:holiday_id>")
+@login_required
+def delete_holiday(holiday_id):
+    if current_user.role != "admin":
+        return redirect(url_for("dashboard"))
+
+    holiday = MarketHoliday.query.get(holiday_id)
+
+    if holiday:
+        db.session.delete(holiday)
+        db.session.commit()
+        flash("Holiday deleted successfully.")
+
+    return redirect(url_for("market_settings"))
 
 
 if __name__ == "__main__":

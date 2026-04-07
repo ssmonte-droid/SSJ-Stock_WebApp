@@ -95,13 +95,13 @@
 
                     <tr>
 
-                        <td>{{ order.order_type }}</td>
+                        <td>{{ order.order_type|title }}</td>
 
-                        <td>{{ order.stock_id }}</td>
+                        <td>{{ stock_lookup.get(order.stock_id, order.stock_id) }}</td>
 
                         <td>{{ "{:,}".format(order.shares) }}</td>
 
-                        <td>{{ order.status }}</td>
+                        <td>{{ order.status|title }}</td>
 
                         <td>{{ order.created_at }}</td>
 
