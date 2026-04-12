@@ -213,6 +213,7 @@
                         <th>Price</th>
                         <th>Available</th>
                         <th>Owned</th>
+                        <th>Total Value</th>
                         <th>Actions</th>
 
                     </tr>
@@ -236,20 +237,24 @@
                         <td>{{ "{:,}".format(portfolio.get(stock.id, 0)) }}</td>
 
                         <td>
+                            {% if portfolio.get(stock.id, 0) > 0 %}
+                                ${{ "{:,.2f}".format(portfolio.get(stock.id, 0) * stock.price) }}
+                                {% else %}
+                                -
+                                {% endif %}
+                        </td>
 
-                            <button class="btn btn-success btn-sm"
-                                onclick="submitTrade('buy', {{ stock.id }}, '{{ stock.symbol }}')">
+                        <td>
 
+                           <button class="btn btn-success btn-sm"
+                                onclick="submitTrade('buy', {{ stock.id }}, '{{ stock.symbol }}', {{ stock.price }})">
                                 Buy
-
                             </button>
 
                             <button class="btn btn-danger btn-sm"
-                                onclick="submitTrade('sell', {{ stock.id }}, '{{ stock.symbol }}')"
+                                onclick="submitTrade('sell', {{ stock.id }}, '{{ stock.symbol }}', {{ stock.price }})"
                                 {% if portfolio.get(stock.id, 0) == 0 %}disabled{% endif %}>
-
                                 Sell
-
                             </button>
 
 
@@ -301,25 +306,27 @@
 
 <script>
 
-function submitTrade(action, stockId, stockSymbol) {
+function submitTrade(action, stockId, stockSymbol, stockPrice) {
 
     let shares = prompt("Enter shares:");
 
     if (!shares || shares <= 0) return;
 
+    let total = (shares * stockPrice).toFixed(2);
     let actionText = action === "buy" ? "buy" : "sell";
+
     let confirmed = confirm(
-        "Are you sure you want to " + actionText + " " + shares + " shares of " + stockSymbol + "?"
+        "Are you sure you want to " + actionText + " " + shares +
+        " shares of " + stockSymbol +
+        " at $" + stockPrice.toFixed(2) +
+        " per share?\nTotal: $" + total
     );
 
     if (!confirmed) return;
 
     document.getElementById("sharesInput").value = shares;
-
     document.getElementById("tradeForm").action = "/" + action + "/" + stockId;
-
     document.getElementById("tradeForm").submit();
-
 }
 
 

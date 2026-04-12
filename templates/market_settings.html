@@ -23,8 +23,12 @@
 
                 <div class="mb-3">
                     <label class="form-label">Timezone</label>
-                    <input type="text" name="timezone" class="form-control"
-                           value="{{ settings.timezone }}" required>
+                    <select name="timezone" class="form-control" required>
+                        <option value="America/New_York" {% if settings.timezone == "America/New_York" %}selected{% endif %}>America/New_York</option>
+                        <option value="America/Chicago" {% if settings.timezone == "America/Chicago" %}selected{% endif %}>America/Chicago</option>
+                        <option value="America/Phoenix" {% if settings.timezone == "America/Phoenix" %}selected{% endif %}>America/Phoenix</option>
+                        <option value="America/Los_Angeles" {% if settings.timezone == "America/Los_Angeles" %}selected{% endif %}>America/Los_Angeles</option>
+                    </select>
                 </div>
 
                 <div class="mb-3">
