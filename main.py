@@ -332,6 +332,26 @@ def dashboard():
         pending_orders=pending_orders
     )
 
+# PORTFOLIO PAGE
+@app.route("/portfolio")
+@login_required
+def portfolio():
+    user_portfolio = Portfolio.query.filter_by(user_id=current_user.id).all()
+
+    stocks = []
+    for item in user_portfolio:
+        stock = Stocks.query.get(item.stock_id)
+        if stock:
+            stocks.append({
+                "id": stock.id,
+                "symbol": stock.symbol,
+                "company_name": stock.company_name,
+                "price": stock.price,
+                "shares": item.shares,
+                "available_shares": stock.available_shares
+            })
+
+    return render_template("portfolio.html", stocks=stocks)
 
 # BUY
 @app.route("/buy/<int:stock_id>", methods=["POST"])

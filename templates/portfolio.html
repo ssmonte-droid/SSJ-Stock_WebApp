@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+    <h2>Your Portfolio</h2>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Company</th>
+                <th>Price</th>
+                <th>Available Shares</th>
+                <th>Shares Owned</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stock in stocks %}
+            <tr>
+                <td>{{ stock.symbol }}</td>
+                <td>{{ stock.company_name }}</td>
+                <td>${{ stock.price }}</td>
+                <td>{{ stock.available_shares }}</td>
+                <td>{{ stock.shares }}</td>
+                <td>
+                    <!-- BUY -->
+                    <button class="btn btn-success btn-sm"
+                        onclick="submitTrade('buy', {{ stock.id }}, '{{ stock.symbol }}', {{ stock.price }})">
+                        Buy
+                    </button>
+
+                    <!-- SELL -->
+                    <button class="btn btn-danger btn-sm"
+                        onclick="submitTrade('sell', {{ stock.id }}, '{{ stock.symbol }}', {{ stock.price }})">
+                        Sell
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- HIDDEN FORM -->
+<form id="tradeForm" method="POST" style="display:none;">
+    <input type="hidden" id="sharesInput" name="shares">
+</form>
+
+<!-- SCRIPT -->
+<script>
+function submitTrade(action, stockId, symbol, price) {
+
+    let shares = prompt("Enter shares:");
+
+    if (!shares || shares <= 0) return;
+
+    let total = (shares * price).toFixed(2);
+
+    let message = `Are you sure you want to ${action} ${shares} shares of ${symbol} at $${price.toFixed(2)} per share?\nTotal: $${total}`;
+
+    if (!confirm(message)) return;
+
+    document.getElementById("sharesInput").value = shares;
+    document.getElementById("tradeForm").action = "/" + action + "/" + stockId;
+    document.getElementById("tradeForm").submit();
+}
+</script>
+
+{% endblock %}
